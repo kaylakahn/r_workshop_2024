@@ -1,0 +1,468 @@
+---
+title: "Day 3 Plots"
+author: "Kayla Kahn"
+date: "2024-08-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, echo=FALSE}
+options(scipen=999)
+```
+
+
+
+```{r include=FALSE}
+# install.packages("ggplot2")
+library(ggplot2)
+```
+# Data Cleaning
+
+Today we will cover plotting in base R and ggplot, but first we will need to read in our dataframe and do a little bit of data manipulation to prepare the data. The dataset we will use contains top top 820 Harry Potter fanfictions on ao3 when sorted by kudos. 
+
+
+```{r}
+hp <- read.csv('hp_ao3.csv')
+str(hp)
+```
+
+Our main variables of interest today are word count, comments, chapters, kudos, bookmarks, and hits. These should all be numeric, but read in as characters, likely because there are commas in the numbers. We will do a little bit of cleanup, primarily using the gsub() function to strip the commas. 
+
+```{r}
+# print some output of gsub as a reminder of what it does
+head(gsub(",", "", hp$Word_Count))
+# we can put the gsub function instead the as.integer function and assign it to the df
+# by using the same column name, we replace our useless character columns with integers
+hp$Word_Count <- as.integer(gsub(",", "", hp$Word_Count))
+hp$Comments <- as.integer(gsub(",", "", hp$Comments))
+hp$Kudos <- as.integer(gsub(",", "", hp$Kudos))
+hp$Bookmarks <- as.integer(gsub(",", "", hp$Bookmarks))
+hp$Hits <- as.integer(gsub(",", "", hp$Hits))
+```
+
+Chapters is weird because it's showing how many chapters are complete out of how many chapters total. So let's just grab the top number. The gsub part says replace / and anything after it with nothing. Thus we are left with the top number. If you are confused with the gsub part, that's ok. This is a bit too in depth for this workshop, but we do need to do it, so it's here.
+
+```{r, include=FALSE}
+hp$Chapters <- as.integer(gsub("/.*", "", hp$Chapters))
+```
+
+Let's also turn caps to lowercase. This is a personal preference.
+
+```{r, include=FALSE}
+names(hp) <- tolower(names(hp))
+```
+
+Now that our variables are of the right data types, we can take a look at the summary statistics.
+
+```{r }
+summary(hp)
+```
+
+# Plotting with base R
+
+## Scatterplots
+
+We are now ready to visualize our data. We will start with base R and then move onto the ggplot2 package, which is a popular option for data visualization. 
+
+Technically, integers are discrete, but we'll treat them as continuous for the purposes of learning data visualization. 
+
+The most basic plot in R is a scatterplot. The following is code for a very basic scatterplot. If you are doing something very in depth and don't want to refer to columns with df$col each time, you can also use the with() function. It looks like with(dataframe, function()). You can do this for all sorts of functions, not just plots. Here are two slightly different ways of getting the same basic plot that looks at the correlation between bookmarks and word count.
+
+```{r, fig.show="hold", out.width="50%"}
+par(mar = c(4, 4, 1, 1)) # line of code instructing the plots to be next to each other
+plot(hp$word_count, hp$bookmarks)
+# same plot as before, but using with()
+with(hp, plot(word_count, bookmarks))
+```
+
+There are many arguments that we can use. 
+xlab = x-axis labels
+ylab = y-axis labels
+main = title
+col = color of points
+pch = shape of points
+
+```{r  fig.show="hold", out.width="50%"}
+par(mar = c(4, 4, 1, 1))
+# add axis labels and title
+plot(hp$word_count, hp$bookmarks, 
+     xlab = "Number of Words", ylab = "Number of Bookmarks", main = "Bookmarks and Fic Length")
+
+# change color and shape of points
+plot(hp$word_count, hp$bookmarks, 
+     xlab = "Number of Words", ylab = "Number of Bookmarks", 
+     main = "Bookmarks and Fic Length",
+     col = "blue", pch = 2)
+```
+
+
+We can also add a line through our points. lm() is the function for OLS. Notice that we input a formula y ~ x now instead of arguments x, y. 
+
+```{r}
+plot(hp$word_count, hp$bookmarks, 
+     xlab = "Number of Words", ylab = "Number of Bookmarks", 
+     main = "Bookmarks and Fic Length",
+     col = "blue", pch = 2)
+abline(lm(bookmarks ~ word_count, data = hp), col = "red")
+```
+
+We can also add points using points() and overlay a line through those new points. This is useful if you want to compare multiple variables on the same graph. And make sure to change the X axis label since it's not just number of chapters.
+
+```{r}
+plot(hp$word_count, hp$bookmarks, 
+     xlab = "Number of Words", ylab = "User Interactions - Bookmarks and Comments", 
+     main = "Fic Length and User Interaction",
+     col = "blue", pch = 2)
+abline(lm(bookmarks ~ word_count, data = hp), col = "red")
+points(hp$word_count, hp$comments, pch = 0, col = "green")
+abline(lm(comments ~ word_count, data = hp), col = "purple")
+```
+
+Finally, we can put a legend on the plot. legend() accepts many of the same arguments as the plot.
+
+```{r}
+plot(hp$word_count, hp$bookmarks, 
+     xlab = "Number of Words", ylab = "User Interactions - Bookmarks and Comments", 
+     main = "Fic Length and User Interaction",
+     col = "blue", pch = 2)
+abline(lm(bookmarks ~ word_count, data = hp), col = "red")
+points(hp$word_count, hp$comments, pch = 0, col = "green")
+abline(lm(comments ~ word_count, data = hp), col = "purple")
+
+legend(1, 35000, legend = c("Bookmarks", "Comments"),
+       col = c("blue", "green"), pch = c(2,0), cex = 1)
+```
+
+
+## Boxplots
+
+Boxplots are a good way to visualize data when you have groups of data. For this, we'll consider ships to be our groups. The dataframe has a lot of ships, though, so we'll limit it to five popular ones, and then we will use a chained ifelse() so that the tick labels are easier to deal with. (If the ship names stay as Entire Character Name/Entire Character Name we won't be able to show them all or we'll have to make the font tiny)
+
+
+```{r}
+hp_ships <- hp[hp$ship %in% c("Sirius Black/Remus Lupin", "Draco Malfoy/Harry Potter", "Hermione Granger/Draco Malfoy", "Harry Potter/Ginny Weasley", "Regulus Black/James Potter"),]
+# Do a chained ifelse so the tick labels are easier to deal with
+hp_ships$ship_names <- with(hp_ships, 
+                            ifelse(ship == "Draco Malfoy/Harry Potter", "Drarry",
+                                   ifelse(ship == "Hermione Granger/Draco Malfoy", "Dramione",
+                                          ifelse(ship == "Sirius Black/Remus Lupin", "Wolfstar", 
+                                                 ifelse(ship == "Regulus Black/James Potter", "Jegulus",
+                                                        ifelse(ship == "Harry Potter/Ginny Weasley", "Hinny", ship))))))
+
+```
+
+We already learned how to add color and change axis labels so let's do it initially. However, we will see that in this first graph, the outliers cause everything to get squished down and we can't tell much about the data from this. We can get rid of the outliers. Finally, if our tick labels are too big, we can make them smaller by using the cex.axis argument.
+
+```{r, fig.show="hold", out.width="33%"}
+par(mar = c(4, 4, 1, 1))
+boxplot(hp_ships$hits ~ hp_ships$ship_names, xlab = "ship", ylab = "hits", col=rainbow(4))
+# outline = FALSE for the outliers
+boxplot(hp_ships$hits ~ hp_ships$ship_names, xlab = "ship", ylab = "hits",
+        outline = FALSE, col=rainbow(4))
+# cex.axis to make the labels smaller
+boxplot(hp_ships$hits ~ hp_ships$ship_names, xlab = "ship", ylab = "hits",
+        outline = FALSE, cex.axis = .7, col=rainbow(5))
+```
+
+We can overlay another set of boxplots, similar to overlaying two sets of points on the scatterplot. This time we use the argument add = TRUE on our second plot. Keep in mind that if your distributions or ranges are very different, your plot might not end up very informative. 
+
+
+```{r, fig.show="hold", out.width="50%"}
+par(mar = c(4, 4, 1, 1))
+boxplot(hp_ships$hits ~ hp_ships$ship_names, xlab = "ship", ylab = "hits and kudos",
+        outline = FALSE, cex.axis = .5, col = "purple")
+boxplot(hp_ships$kudos ~ hp_ships$ship_names, add = TRUE,
+        outline = FALSE, cex.axis = .5, col = "green")
+
+boxplot(hp_ships$bookmarks ~ hp_ships$ship_names, xlab = "ship", ylab = "bookmarks and comments",
+        outline = FALSE, cex.axis = .5, col = "purple")
+boxplot(hp_ships$comments ~ hp_ships$ship_names, add = TRUE,
+        outline = FALSE, cex.axis = .5, col = "green")
+
+legend(4, 8000, legend = c("Bookmarks", "Comments"),
+       col = c("purple", "green"), pch = c(2,0), cex = .8)
+
+```
+
+We can do two completely separate boxplots next to each other using par(mfrow = c(1, 2)) for 1 row two plots (not shown). But we can also overlay our boxes and have them next to each other instead of on top of each other. We also can make the boxes skinnier.
+ 
+```{r, fig.show="hold", out.width="50%"}
+par(mar = c(4, 4, 1, 1))
+# next to each other
+boxplot(hp_ships$bookmarks ~ hp_ships$ship_names, xlab = "ship", ylab = "hits",
+        outline = FALSE, cex.axis = .5, col = "purple",
+        at = 1:length(unique(hp_ships$ship_names)) - 0.2)
+boxplot(hp_ships$comments ~ hp_ships$ship_names, add = TRUE,
+        outline = FALSE, cex.axis = .5, col = "green",
+        at = 1:length(unique(hp_ships$ship_names)) + 0.2)
+legend(4, 8000, legend = c("Bookmarks", "Comments"),
+       col = c("purple", "green"), pch = c(2,0), cex = .8)
+# skinnier
+boxplot(hp_ships$bookmarks ~ hp_ships$ship_names, xlab = "ship", ylab = "stats",
+        outline = FALSE, cex.axis = .5, col = "purple",
+        at = 1:length(unique(hp_ships$ship_names)) - 0.2,
+        boxwex = .4)
+boxplot(hp_ships$comments ~ hp_ships$ship_names, add = TRUE,
+        outline = FALSE, cex.axis = .001, col = "green",
+        at = 1:length(unique(hp_ships$ship_names)) + 0.2,
+        boxwex = .4)
+legend(4, 8000, legend = c("Bookmarks", "Comments"),
+       col = c("purple", "green"), pch = c(2,0), cex = .8)
+
+```
+Other plot options include barplots, histograms, and density plots. For a barplot, we plot a table. We will plot how many fics there are per ship, turn it sideways, and plot the number of fics per year.
+
+
+```{r, fig.show="hold", out.width="33%"}
+par(mar = c(4, 4, 1, 1))
+ship_counts <- table(hp_ships$ship_names)
+barplot(ship_counts, col = cm.colors(5))
+# Can turn it sideways
+barplot(ship_counts, horiz = TRUE, cex.names = .8, col = cm.colors(5))
+fics_year <- table(hp_ships$date)
+barplot(fics_year, col=heat.colors(20))
+
+```
+Our previous charts are so pretty but they are running past the axis! We can use xlim or ylim to change this.
+
+
+```{r, fig.show="hold", out.width="33%"}
+par(mar = c(4, 4, 1, 1))
+ship_counts <- table(hp_ships$ship_names)
+barplot(ship_counts, col = cm.colors(5), ylim = c(0,300), main = "Fics per ship")
+# Can turn it sideways
+barplot(ship_counts, horiz = TRUE, cex.names = .8, col = cm.colors(5), xlim = c(0,300))
+fics_year <- table(hp_ships$date)
+barplot(fics_year, col=heat.colors(20), ylim = c(0,60), main = "fics per year")
+
+```
+
+Here are some quick, ugly density plots and histograms. You can make them prettier using everything you learned for scatterplots, boxplots, and barplots
+
+```{r, fig.show="hold", out.width="33%"}
+par(mar = c(4, 4, 1, 1))
+
+plot(density(hp_ships$hits))
+hist(hp_ships$hits)
+# change the number of breaks
+hist(hp_ships$hits, breaks = 40)
+```
+
+# ggplot
+
+ggplot plots can be customized much more than plots in base R. ggplot can be scary, though, so we will add arguments one at a time, even more so than what we did for the base R plots.
+
+Using base R, we previously examined the correlation between word count and number of bookmarks using a base R scatterplot. Now we'll do the same in ggplot. 
+
+### basic
+
+```{r}
+ggplot(data=hp_ships, aes(x = word_count, y = bookmarks)) + # this sets it up, but this alone won't add the points
+  geom_point() # this adds the points
+
+```
+
+### color
+We can color the points using a basic color, or we can color the points according to another variable! Notice that the latter is wrapped in aes() and the former is not. The next three plots will be first a basic color, then points colored based on the number of chapters, then points colored by ship.
+
+```{r}
+# basic color
+ggplot(data=hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(color = "violet") # fixed color
+
+# Here's if the variable is continuous (or "continuous")
+ggplot(data=hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = chapters))
+
+# Here's if the variable is categorical
+ggplot(data=hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names))
+```
+
+### other point aesthetics
+We can change the shape of the points and the size of the points! There are many other aesthetics that we won't cover, like changing the transparency of the points. The next three plots will show 1) shape change according to ship, 2) size based on the year the fic was written, 3) size based on the year the fic was written but with a range that we define so that the points are not enormous.
+
+```{r}
+# We can change the shape
+ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names, shape = ship_names))
+# We can change the size
+ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names, shape = ship_names, size = date))
+# That's super large. We can make them smaller by defining the range of sizes to stay within
+ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names, shape = ship_names, size = date)) +
+  scale_size_continuous(range = c(1, 4))
+```
+
+
+### point labels
+
+We can also add labels to our dots. (And we will get rid of size for our points)
+```{r}
+ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names, shape = ship_names)) +
+  geom_text(aes(label = title))
+```
+
+Whoa!!!! We definitely don't want that. What if we label only the 10 most popular based on hits?
+
+```{r}
+ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names, shape = ship_names)) +
+  geom_text(data = hp_ships[order(-hp_ships$hits), ][1:10, ], aes(label = title))
+```
+
+But now we need to make these labels smaller!
+
+```{r}
+ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names, shape = ship_names)) +
+  geom_text(data = hp_ships[order(-hp_ships$hits), ][1:10, ], aes(label = title), size = 2)
+```
+
+### regression line
+
+```{r}
+ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names, shape = ship_names)) +
+  geom_text(data = hp_ships[order(-hp_ships$hits), ][1:10, ], aes(label = title), size = 2) +
+  stat_smooth(method=lm)
+```
+
+### legend
+
+```{r}
+ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names, shape = ship_names)) +
+  geom_text(data = hp_ships[order(-hp_ships$hits), ][1:10, ], aes(label = title), size = 2) +
+  stat_smooth(method=lm) + 
+  theme(legend.position="left")
+```
+
+Except that left sided legend is pretty ugly so we will let it go back to the right, which is the default so we don't need to specify anything.
+
+### Plot title and axis labels
+
+```{r}
+ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
+  geom_point(aes(color = ship_names, shape = ship_names)) +
+  geom_text(data = hp_ships[order(-hp_ships$hits), ][1:10, ], aes(label = title), size = 2) +
+  stat_smooth(method=lm) + 
+  labs(title = "HP Fanfiction", x = "Word Count", y = "Bookmarks")
+```
+
+  
+There are tons of options. You can change all sorts of aesthetics about the points, the regression line, the axes. You can tilt the tick labels, change the font sizes, etc. When it comes time for you to plot stuff, you will probably end up looking up all sorts of options. This is just an introduction so that it doesn't seem so scary.
+
+Other types of plots will functions similarly, but we'll cover a few cool options for barplots and boxplots.
+
+## barplots
+One option is a grouped barplot. This is useful when you already have categories, and you want to compare something else within each category. We will make a plot that looks at how many kudos (likes) there are for each ship category within each ship. 
+
+```{r}
+# dodge says to group them, identity says it takes on the value of itself
+# aes(fill = ship_category) says to color based on ship category
+ggplot(data = hp_ships, aes(x = ship_names, y = kudos)) + 
+  geom_bar(position = "dodge", stat = "identity", aes(fill = ship_category))
+```
+
+We can take the same information and stack it. All we change from before is the position argument.
+
+```{r}
+ggplot(data = hp_ships, aes(x = ship_names, y = kudos)) + 
+  geom_bar(position = "stack", stat = "identity", aes(fill= ship_category))
+
+```
+
+## boxplots
+
+First up: a basic barplot, but we're going to use scale_color_manual() to choose our own colors since we haven't learned that yet.
+
+```{r}
+ggplot(hp_ships, aes(x = ship_names, y = comments)) +
+  geom_boxplot(aes(col = ship_names)) +
+  scale_color_manual(values = c("lightgreen", "lightpink", "lightblue", "mediumslateblue", "lightsalmon" )) 
+```
+
+We have a very extreme outlier that is causing the rest of our graph to become squished. We can rescale the axis, which will cut off only the outliers beyond our axis range while leaving the others alone.
+
+```{r}
+ggplot(hp_ships, aes(x = ship_names, y = comments)) +
+  geom_boxplot(aes(col = ship_names)) +
+  scale_color_manual(values = c("lightgreen", "lightpink", "lightblue", "mediumslateblue", "lightsalmon" )) +
+  scale_y_continuous(limits = c(0, 7500))
+```
+
+We also have the option to add the actual data points over our boxes.
+
+```{r}
+ggplot(hp_ships, aes(x = ship_names, y = comments)) +
+  geom_boxplot(aes(col = ship_names)) +
+  scale_color_manual(values = c("lightgreen", "lightpink", "lightblue", "mediumslateblue", "lightsalmon" ))  +
+  scale_y_continuous(limits = c(0, 7500)) +
+  geom_jitter(color="black", size=0.4, alpha=0.9)
+```
+
+## histogram
+
+A basic histogram. We'll go back to hp (as opposed to hp_ships) just to have a few more data points.
+```{r}
+ggplot(hp_ships, aes(x = chapters)) +
+  geom_histogram()
+```
+
+We can change the number of bins by controlling the width, and we can also set a color.
+
+```{r}
+# change bins by controlling the width
+ggplot(hp_ships, aes(x = chapters)) +
+  geom_histogram(binwidth = 3, fill = "lavender")
+```
+
+Our chart is hard to see now, so let's change the background. Here's one way to do it.
+
+```{r}
+ggplot(hp_ships, aes(x = chapters)) +
+  geom_histogram(binwidth = 3, fill = "lavender") +
+  theme_dark()
+```
+
+We could also do a histogram per group. Here's the distribution of the number of kudos per ship.
+
+```{r}
+# overlapping
+ggplot(hp_ships, aes(x = kudos, fill = ship_names)) +
+  geom_histogram(position = "identity", alpha = .3, bins = 40) 
+```
+
+And finally, here is a mirror histogram.
+
+```{r}
+# mirror (doing it for density plot but it can also be done for histograms)
+ggplot(hp, aes(x=x)) +
+  geom_density(aes(x = bookmarks, y = ..density..), fill = "steelblue3") +
+  geom_label(aes(x = 15000, y = .0001, label = "bookmarks")) +
+  geom_density(aes(x = comments, y = -..density..), fill = "palevioletred") +
+  geom_label(aes(x = 10000, y = -.0004, label = "comments"))
+```
+
+And here we change how many y-axis ticks there are
+
+```{r}
+ggplot(hp, aes(x=x)) +
+  geom_density(aes(x = bookmarks, y = ..density..), fill = "steelblue3") +
+  geom_label(aes(x = 15000, y = .0001, label = "bookmarks")) +
+  geom_density(aes(x = comments, y = -..density..), fill = "palevioletred") +
+  geom_label(aes(x = 10000, y = -.0004, label = "comments")) +
+  scale_y_continuous(
+    breaks = c(-0.0005, -0.0003, 0, 0.0003, 0.0005),
+    labels = c("-0.0005", "-0.0003", "0", "0.0003", "0.0005")
+  )
+```
+
+There are tons of options. [The R Graph Gallery](https://r-graph-gallery.com) is a great place to look.
+
