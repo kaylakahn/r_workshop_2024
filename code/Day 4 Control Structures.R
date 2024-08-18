@@ -1,5 +1,6 @@
 ####################################
 # R Workshop August 2024 Day 4
+# Kayla Kahn
 ####################################
 
 # Today we will work with control structures and simulations

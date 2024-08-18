@@ -1,5 +1,6 @@
 ####################################
 # R Workshop August 2024 Day 3
+# Kayla Kahn
 ####################################
 
 #install.packages("ggplot2")

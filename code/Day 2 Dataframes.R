@@ -1,5 +1,6 @@
 ####################################
 # R Workshop August 2024 Day 2
+# Kayla Kahn
 ####################################
 install.packages("dplyr")
 install.packages("stargazer")
