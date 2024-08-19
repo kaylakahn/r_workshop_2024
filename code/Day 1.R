@@ -84,7 +84,7 @@ y + z
 y - z
 y == z
 sqrt(y)
-z+50
+z + 50
 y/10
 m == x # (from earlier)
 
@@ -98,7 +98,7 @@ n <- y + z
 1:10 
 c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) # c() is combine
 seq(10) 
-seq(.1, 1, by = .1)
+seq(from = .1, to = 1, by = .1)
 
 seq(1, 10, by = 2) # by increments of 2
 rep(1:3, 2) # repeat 1 to 3 twice
@@ -115,7 +115,7 @@ rep(1:3, 2) # repeat 1 to 3 twice
 # Complex: 5+ 7i. You probably won't be using this data type
 
 # How do we know the data type? We can use the 'class' or 'str' (structure) function
-x # 5, 10, 15, 20
+x <- c(5, 10, 15, 20)
 class(x)
 str(x)
 # To create an integer vector, you need L
@@ -147,6 +147,7 @@ string_vector <- c("Charles", "Erik", "Logan", "Jean", "Raven")
 str(string_vector)
 # What happens when vectors contain elements of different types? 
 mixed_vector <- c("Charles", 5, "11", TRUE)
+mixed_vector
 # It turns each element into a string. What about without character?
 mixed_vector <- c(5, 10, TRUE)
 # It treats everything as numeric. TRUE/FALSE becomes 1/0
@@ -160,6 +161,7 @@ y == z
 # so many FALSEs to find one TRUE! We might not even be able to print every element! TRUE might be hidden
 # instead of ==, use %in%
 "ERIK" %in% string_vector
+"Erik" %in% string_vector
 # Or we can use which() to find at which element it is TRUE
 which(string_vector == "Jean")
 which(string_vector == "Charles")
@@ -167,9 +169,6 @@ which(string_vector == "Charles")
 # We can extract elements from our vectors by indices
 string_vector[4]
 
-# We can add numeric or integer vectors
-x + x
-x + y
 
 ####################################
 # Lists
