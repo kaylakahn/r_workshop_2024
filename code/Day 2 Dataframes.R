@@ -64,6 +64,7 @@ detach("package:dplyr", unload = TRUE) # it is still installed, just not loaded 
 # Dataframes
 ####################################
 read.csv("the_office_series.csv") # you might have to change the filepath based on your WD
+read.csv("https://raw.githubusercontent.com/kaylakahn/r_workshop_2024/main/data/the_office_series.csv")
 # Source: https://www.kaggle.com/datasets/nehaprabhavalkar/the-office-dataset
 # Right now we're only loading it in. It will be hard or impossible to work on it if we must load every time
 # We will assign the dataframe as an object so that it stays in the global env. 
@@ -105,6 +106,7 @@ office_df$Season <- as.integer(office_df$Season)
 office_df$season_cat <- as.factor(office_df$Season)
 
 # What about Date? It's a character variable. How can we coerce it to a datetime format?
+str(office_df$Date)
 # (normally, you would import all your packages at the top of your script)
 # We can see that it's date,. month, year, so we can use lubridate's dmy()
 dmy(office_df$Date)
@@ -279,7 +281,7 @@ office_df[office_df$year < 2007 & office_df$Ratings > 8,]
 ?ifelse
 office_df$year_rating <- ifelse(office_df$year < 2007 & office_df$Ratings > 8, 1, 0)
 # You can also type out the arguments
-office_df$year_rating <- ifelse(test = office_df$year < 2007 & office_df$Ratings > 8, yes = 1, no =0)
+office_df$year_rating <- ifelse(test = office_df$year < 2007 & office_df$Ratings > 8, yes = 1, no = 0)
 # The above line of code adds a variable (column) to the dataframe
 # If the year is below 2007 and the rating is above 8, our new variable year_rating takes on the value of 1
 # otherwise, it's 0. Then we can subset based on this column
