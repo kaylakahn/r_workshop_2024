@@ -28,9 +28,8 @@
 ####################################
 
 # We will begin with if/else
-# We need some n```{r}
 set.seed(9986000) # set random seed
-x <- rnorm(1, 0, 1) # generate a random number following normal distribution. first argument is how many numbers to gen
+x <- rnorm(n = 1, mean = 0, sd = 1) # generate a random number following normal distribution. first argument is how many numbers to gen
 print(x)
 
 # Let's put it into if/else
@@ -175,7 +174,7 @@ x_plus_y(x = 10, y = -5)
 x_plus_y <- function(x, y = 1){
   x + y
 }
-x_plus_y(x = 10)
+x_plus_y(x = 10) # y = 1 because it is the default 
 # default value is like how in rnorm we have a default mean of 0 and sd of 1 but we can change it
 rnorm(10, mean = 7, sd = 10)
 x_plus_y(x = 10, y = -5) 
@@ -211,8 +210,6 @@ add5(y)
 
 
 
-
-
 ####################################
 # simulating data
 ####################################
@@ -239,6 +236,7 @@ ex_sd <- sample(seq(0.1, 5, by = 0.01), 1)
 rnorm(1, mean = ex_mean, sd = ex_sd)
 
 #Let's add it to the loop
+set.seed(1)
 for (i in 1:n) {
   mean <- sample(seq(-10, 10, by = 0.1), 1) 
   sd <- sample(seq(0.1, 5, by = 0.01), 1) 
@@ -257,6 +255,7 @@ colnames(df) <- c("number", "mean", "sd")
 
 # We want to store the results at each i into the df. This is where [i] comes in
 for (i in 1:n) {
+  print(i)
   mean <- sample(seq(-10, 10, by = 0.1), 1) 
   sd <- sample(seq(0.1, 5, by = 0.01), 1) 
   number <- rnorm(1, mean, sd)
@@ -278,9 +277,11 @@ df
 
 
 
+# using rnorm to get mean and sd in rnorm draw
+rnorm(1, mean = rnorm(1), sd = rnorm(1, mean = 3, sd = 2))
 
-
-
+# remove object from global environment
+rm(mean)
 
 
 

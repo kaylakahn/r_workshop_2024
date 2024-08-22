@@ -83,7 +83,8 @@ hp_ships$ship_names <- with(hp_ships,
 
 
 # We already learned how to add color and change axis labels so let's do it initially
-boxplot(hp_ships$hits ~ hp_ships$ship_names, xlab = "ship", ylab = "hits", col=rainbow(4))
+boxplot(hp_ships$ship_names, hp_ships$hits) # error
+boxplot(hp_ships$hits ~ hp_ships$ship_names, xlab = "ship", ylab = "hits", col=cm.colors(5))
 # The extreme outlier makes this UGLY. Let's get rid of it. For learning purposes.
 boxplot(hp_ships$hits ~ hp_ships$ship_names, xlab = "ship", ylab = "hits",
         outline = FALSE, col=rainbow(4))
@@ -102,7 +103,7 @@ boxplot(hp_ships$comments ~ hp_ships$ship_names, add = TRUE,
         outline = FALSE, cex.axis = .5, col = "green")
 
 legend(4, 8000, legend = c("Bookmarks", "Comments"),
-       col = c("purple", "green"), pch = c(2,0), cex = .8)
+       col = c("purple", "green"), pch = c(0,0), cex = .8)
 # Let's put them next to each other instead
 boxplot(hp_ships$bookmarks ~ hp_ships$ship_names, xlab = "ship", ylab = "hits",
         outline = FALSE, cex.axis = .5, col = "purple",
@@ -170,7 +171,7 @@ ggplot(hp_ships, aes(x = word_count, y = bookmarks)) +
 ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
   geom_point(aes(color = ship_names, shape = ship_names, size = date)) +
   scale_size_continuous(range = c(1, 4))
-# We can also add labels. (And we will get rid of size)
+# We can also add labels to the points. (And we will get rid of size)
 ggplot(hp_ships, aes(x = word_count, y = bookmarks)) + 
   geom_point(aes(color = ship_names, shape = ship_names)) +
   geom_text(aes(label = title))
@@ -205,7 +206,6 @@ ggplot(hp_ships, aes(x = word_count, y = bookmarks)) +
 # end up looking up all sorts of options.
 # Other types of plots will functions similarly, but I've included a few cool options for
 # barplots and boxplots
-
 
 
 
