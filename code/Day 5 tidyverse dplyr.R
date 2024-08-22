@@ -102,6 +102,15 @@ office_year_ratings
 # So you just use as.data.frame() to change it
 as.data.frame(office_year_ratings)
 
+###########################################
+# base R
+aggregate(ratings ~ year, data = office_df, FUN = mean)
+aggregate(ratings ~ year, data = office_df, FUN = max)
+# then merge the two. or...
+aggregate(ratings ~ year, data = office_df, FUN = function(x) c(mean(x), max(x)))
+###########################################
+
+
 # Returning to summarize()
 # We want to summarize a lot of columns! Let's try it with just one function first
 # We will use the function across() inside summarize()
@@ -113,6 +122,15 @@ office_df %>%
 # If it doesn't run, you may have called something "mean" in your environment
 rm(mean) # to get rid of it/restore mean() as a function, then try running again
 
+###########################################
+# base R
+base_agg_example <- aggregate(x = office_df[, sapply(office_df, is.numeric)], 
+                              by = list(office_df$year), FUN = mean)
+# and you would have to rename the cols in a second step
+colnames(base_agg_example)[4:7] <- paste0("mean_", colnames(base_agg_example)[4:7])
+# and subset to only the cols you want
+base_agg_example <- base_agg_example[4:8]
+###########################################
 
 
 # Here are some other very similar things we can do
@@ -177,6 +195,7 @@ office_df_yrmonth <- office_df %>%
 # Let's divide duration by 60 minutes
 office_df <- office_df %>%
   mutate(hours = duration/60)
+# base r: office_df$hours <- office_df$duration/60
 # We can do multiple at once, like with summary
 office_df %>%
   mutate(across(where(is.numeric), .fns = log, .names = "log_{col}"))
