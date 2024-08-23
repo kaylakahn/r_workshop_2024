@@ -25,12 +25,14 @@ library(lubridate)
 
 # We will return to the dataset we worked with on Tuesday
 office_df <- read.csv("the_office_series.csv", na.strings = "")
+office_df <- read.csv("https://raw.githubusercontent.com/kaylakahn/r_workshop_2024/main/data/the_office_series.csv", na.strings = "")
 # turning column names to lowercase (personal preference)
 names(office_df) <- tolower(names(office_df))
 
 # select() is for columns and filter() is for rows
-# Previously we removed column X by using office_df$X <- NULL
+# Previously we removed column x by using office_df$x <- NULL
 # But we can use dplyr
+# select() deals with columns
 office2 <- select(office_df, !x)
 # But something amazing about dplyr is the pipe %>%
 office2 <- office_df %>%
@@ -44,13 +46,18 @@ office2 <- office_df %>%
 # Maybe we only want numeric columns
 office2 <- office_df %>%
   select(where(is.numeric))
+# episodetitle and ratings through duration
+office2 <- office_df %>%
+  select(episodetitle, ratings:duration)
 
 # What about rows
+# filter() is for rows
 # What if we only wanted episodes written by Mindy Kaling
 # previous: office_df[office_df$Writers == "Mindy Kaling",]
 mindy_df <- office_df %>%
   filter(writers == "Mindy Kaling")
-# previous: office_df[grepl("Mindy Kaling", office_df$Writers),]
+# what about any written by Mindy Kaling, even if more than one writer
+# previous: office_df[grepl("Mindy Kaling", office_df$writers),]
 mindy_df <- office_df %>%
   filter(grepl("Mindy Kaling", writers))
 # Mindy Kaling or B. J. Novak?
@@ -58,14 +65,31 @@ mindy_df <- office_df %>%
   filter(writers == c("Mindy Kaling", "B. J. Novak"))
 # Something is weird... why only 14 observations when with just mindy it was 20?
 # This is why we discussed %in% on Tuesday
+# This is episodes written either by ONLY Mindy or ONLY B. J.
 mindy_df <- office_df %>%
   filter(writers %in% c("Mindy Kaling", "B. J. Novak"))
+# What about Mindy Kaling or B. J. Novak even when they've co-written an episode
+# This is episodes written by ANYONE (any amount of people) as long as one of those people is 
+# Mindy or B. J.
+#grepl("Mindy Kaling|B. J. Novak", office_df$writers) # from Tuesday's code
+mindy_df <- office_df %>%
+  filter(grepl("Mindy Kaling|B. J. Novak", writers))
+
+# == vs. in 
+office_df$writers == c("Mindy Kaling", "B. J. Novak") # misses
+office_df$writers %in% c("Mindy Kaling", "B. J. Novak") # gets them all
+
+
 
 # We can chain operations. This is when the pipe becomes useful
 # Let's say we want ratings above 8, and we only want columns episodetitle, about, and director
 # base R: df[df$column > 8, c("column_you_want_to_keep", "other_column_you_want_to_keep")]
 office_df[office_df$ratings > 8, c("episodetitle", "about", "director")]
 # dplyr
+# example when using just select
+example_office <- office_df %>%
+  select(episodetitle, about, director)
+# example when you get error
 office2 <- office_df %>%
   select(episodetitle, about, director) %>%
   filter(ratings > 8)
@@ -75,13 +99,13 @@ office2 <- office_df %>%
   filter(ratings > 8) %>%
   select(episodetitle, about, director) 
 
-# We can rename too
+# We can rename columns too
 # base R: names(df)[names(df) == "current_var_name"] <- "new_var_name"
 # dplyr: rename(df, new = old) (or with the pipe: df %>% rename(new = old))
 office2 <- office_df %>%
   filter(ratings > 8) %>%
   select(episodetitle, about, director) %>%
-  rename(episode_title = episodetitle) # new = old
+  rename(episode_title = episodetitle, episode_summary = about) # new = old
 
 # summarize() (also summarise()) is a function you might end up working with a lot
 # Let's say we want the mean and sd of the ratings column
@@ -101,6 +125,12 @@ office_year_ratings
 # In many circumstances, functions treat the two the same. In other cases...
 # So you just use as.data.frame() to change it
 as.data.frame(office_year_ratings)
+# trying as.data.frame in front of the pipe chain
+as.data.frame(
+  office_df %>%
+    group_by(year) %>%
+    summarize(mean = mean(ratings), max = max(ratings))
+)
 
 ###########################################
 # base R
@@ -114,7 +144,6 @@ aggregate(ratings ~ year, data = office_df, FUN = function(x) c(mean(x), max(x))
 # Returning to summarize()
 # We want to summarize a lot of columns! Let's try it with just one function first
 # We will use the function across() inside summarize()
-rm(mean)
 office_df %>%
   group_by(year) %>%
   summarize(across(ratings:duration, .fns = mean, .names = "mean_{col}"))
