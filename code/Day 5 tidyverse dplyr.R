@@ -244,3 +244,26 @@ office_df %>%
 
 
 
+# %in% vs ==
+# https://stackoverflow.com/questions/42637099/difference-between-the-and-in-operators-in-r
+
+c(1, 2) == c(1, 2, 3, 1)
+c(1, 2) %in% c(1, 2, 3, 1)
+# The reason that == appears not to work is that it compares element-wise
+# so c(1,2) == c(1, 2, 3, 1) checks if 1 == 1 and 2 == 2. Then in the second vector c(1, 2, 3, 1)
+# We still have 3 and 1, but the first vector c(1, 2) doesn't have any left, so it starts over
+# and compares 1 == 3 and then 2 == 1 (it recycles the shorter vector)
+
+# So filter(office_df, writers == c("Mindy Kaling", "B. J. Novak")) checks the first element of the writers column
+# for Mindy Kaling, the second element of the writers column for B. J. Novak
+# then it recycles the vector c("Mindy Kaling", "B. J. Novak") and checks the third element of the writers column for Mindy Kaling
+# the fourth for B. J. Novack, the fifth for Mindy Kaling, and so on
+
+# %in%  just checks if the elements appear at all
+# so filter(office_df, writers %in% c("Mindy Kaling", "B. J. Novak")) checks the first element for Mindy or B. J.
+# and then the second for Mindy or B. J. and then the third for Mindy or B. J. and so on
+
+
+
+
+
